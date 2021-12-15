@@ -1,0 +1,253 @@
+---
+title: "Project Data Set"
+author: "Group Q"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+library(skimr)
+
+Cleaned_2018_Flights <- read_csv("Cleaned_2018_Flights.csv",col_types = cols(
+  ...1 = col_double(),
+  ItinID = col_double(),
+  MktID = col_double(),
+  MktCoupons = col_double(),
+  Quarter = col_factor(),
+  Origin = col_character(),
+  OriginWac = col_character(),
+  Dest = col_character(),
+  DestWac = col_character(),
+  Miles = col_double(),
+  ContiguousUSA = col_factor(),
+  NumTicketsOrdered = col_character(),
+  AirlineCompany = col_character(),
+  PricePerTicket = col_double()
+))
+```
+##Using skim on the raw data set
+```{r}
+skim(Cleaned_2018_Flights)
+```
+
+#Making corresponding categorical variable for the default numerics Quarter, NumTicketsOrdered and ContiguousUSA
+
+```{r}
+Cleaned_2018_Flights <- within(Cleaned_2018_Flights, {Quarter.cat <- NA })
+Cleaned_2018_Flights <- within(Cleaned_2018_Flights, {Quarter.cat[Quarter == 1] <- "q1"})
+Cleaned_2018_Flights <- within(Cleaned_2018_Flights, {Quarter.cat[Quarter == 2] <- "q2"})
+Cleaned_2018_Flights <- within(Cleaned_2018_Flights, {Quarter.cat[Quarter == 3] <- "q3"})
+Cleaned_2018_Flights <- within(Cleaned_2018_Flights, {Quarter.cat[Quarter == 4] <- "q4"})
+
+Cleaned_2018_Flights <- within(Cleaned_2018_Flights, {NumTicketsOrdered.cat <- NA })
+Cleaned_2018_Flights <- within(Cleaned_2018_Flights, {NumTicketsOrdered.cat[NumTicketsOrdered < 5] <- "less_than_five" })
+Cleaned_2018_Flights <- within(Cleaned_2018_Flights, {NumTicketsOrdered.cat[NumTicketsOrdered < 10] <- "less_than_ten" })
+Cleaned_2018_Flights <- within(Cleaned_2018_Flights, {NumTicketsOrdered.cat[NumTicketsOrdered < 15] <- "less_than_fifteen" })
+Cleaned_2018_Flights <- within(Cleaned_2018_Flights, {NumTicketsOrdered.cat[NumTicketsOrdered <= 20] <- "less_than_twentyone" })
+
+Cleaned_2018_Flights <- within(Cleaned_2018_Flights, {ContiguousUSA.cat <- NA })
+Cleaned_2018_Flights <- within(Cleaned_2018_Flights, {ContiguousUSA.cat[ContiguousUSA == 2 ] <- "contiguous_state"})
+Cleaned_2018_Flights <- within(Cleaned_2018_Flights, {ContiguousUSA.cat[ContiguousUSA == 1 ] <- "non-contiguous_state"})
+
+```
+
+
+##Set a seed and grab a sample from the raw dataset
+```{r}
+set.seed(123)
+rows <- sample(1:9534417, size = 3000)
+mySample <- Cleaned_2018_Flights %>%
+  slice(rows)
+```
+
+##Renaming some of the columns in the dataset
+```{r}
+mySample <- mySample %>%
+  rename('QuarterOfYear2018' = `Quarter`)
+mySample <- mySample %>%
+  rename('CityOrigin' = `Origin`)
+mySample <- mySample %>%
+  rename('WorldAreaCodeOrigin' = `OriginWac`)
+mySample <- mySample %>%
+  rename('CityDestination' = `Dest`)
+mySample <- mySample %>%
+  rename('WorldAreaCodeDestination' = `DestWac`)
+```
+##Getting rid of unwanted variables
+```{r}
+mySample <- mySample %>%
+  select(-c(ItinID,MktID,...1,MktCoupons))
+```
+
+The variables we are interested in are as fallows - 
+
+1) QuarterOfYear218(Corresponding Quarter.cat) : This is a numeric variable for which we have created a corresponding categorical variable - Quarter.cat, which is essentially 4 different quarters of the year 2018(Jan-March,April-June,July-September,Oct-Dec, represented using the factors - 1,2,3 and 4 respectively.
+
+2)CityOfOrigin : This is another categorical variable describing the city from which the individual departs.
+
+3)WorldAreaCodeOrigin: Categorical variable specifying origin city's world area code, minimum:1 Max: 93, so a total of 93 area codes, this is the sate to which the airport belongs
+
+4)CityDestination: Categorical variable describing the city to which the individual arrives.
+
+5)WorldAreaCode destination: Categorical variable specifying the destination city's world area code, minimum:1 Max: 93, so a total of 93 area codes, this is the state to which the airport belongs
+
+USA State/Territory World Area Codes
+
+1 Alaska
+
+2 Hawaii
+
+3 Puerto Rico
+
+4 U.S. Virgin Islands
+
+5 U.S. Pacific Trust Territories and Possessions
+
+11 Connecticut
+
+12 Maine
+
+13 Massachusetts
+
+14 New Hampshire
+
+15 Rhode Island
+
+16 Vermont
+
+21 New Jersey
+
+22 New York
+
+23 Pennsylvania
+
+31 Delaware
+
+32 District of Columbia
+
+33 Florida
+
+34 Georgia
+
+35 Maryland
+
+36 North Carolina
+
+37 South Carolina
+
+38 Virginia
+
+39 West Virginia
+
+41 Illinois
+
+42 Indiana
+
+43 Michigan
+
+44 Ohio
+
+45 Wisconsin
+
+51 Alabama
+
+52 Kentucky
+
+53 Mississippi
+
+54 Tennessee
+
+61 Iowa
+
+62 Kansas
+
+63 Minnesota
+
+64 Missouri
+
+65 Nebraska
+
+66 North Dakota
+
+67 South Dakota
+
+71 Arkansas
+
+72 Louisiana
+
+73 Oklahoma
+
+74 Texas
+
+81 Arizona
+
+82 Colorado
+
+83 Idaho
+
+84 Montana
+
+85 Nevada
+
+86 New Mexico
+
+87 Utah
+
+88 Wyoming
+
+91 California
+
+92 Oregon
+
+93 Washington
+
+6)Miles: Numerical variable specifying the total distance of the trip in miles.min 68 max 4983 miles.
+
+7)ContiguousUSA(corresponding ContiguousUSA.cat): Factor variable specifying whether the flight is in one of the 48 contiguous US states or not.
+
+8)NumTicketsOrdered(corresponding NumTicketsOrdered.cat): Categorical variable specifying which range(<5,<10,<15 or < 20) of number of tickets were purchased. min value 1 max 20.
+
+
+9)AirlineCompany: Categorical variable specifying the airline company for the itenar, a total of 12 companies - 
+
+WN -- Southwest Airlines Co.
+
+DL -- Delta Air Lines Inc.
+
+AA -- American Airlines Inc.
+
+UA -- United Air Lines Inc.
+
+B6 -- JetBlue Airways
+
+AS -- Alaska Airlines Inc.
+
+NK -- Spirit Air Lines
+
+G4 -- Allegiant Air
+
+F9 -- Frontier Airlines Inc.
+
+HA -- Hawaiian Airlines Inc.
+
+SY -- Sun Country Airlines d/b/a MN Airlines
+
+VX -- Virgin America
+
+10) PricePerTicket: The numerical variable specifying price of the trip, we hope to model, and predict.
+
+All our variables have a range of values that make sense, and there are no missing values in any of the rows.One thing we have yet to decide is whether to use the origin-destinationCodes or the origin-destination themselves for our final model, because using both would result in multicolinear columns.
+
+Possibilities : 
+
+1) Cross training data, using rows from first two quarters to predict the price of last two, or using half the rows of one of the quarters to predict the other half of the same quarter, or doing something similar using airline company(using half of the data from one airline compnay to predict the other half of the same airline company's prices). The dataset is large enough to allow this!
+
+
+2) Multiple Regression: We have one numeric variable to predict(ticket prices), using one numeric predictor(miles) and multiple categorical predictors(company,quarter,origin-destination) including one binary(contiguousUSA), we could also make some of the categories into binaries(for example factoring companies into 1 = American Airlines 0 = all others), to make specific comparisons using parallel slopes/parallel planes models. We could use model selection techniques like backward elimination and forwards selection for a better fit and ANOVA to assess and refine our model
+
+Wrangling issues: We have to decide and execute how to correctly filter our raw data for cross training and/or multiple regression analysis, especially if we plan to cross train using multiple conditions such as a specific quarter of the year for a particular company. 
+
+
+
